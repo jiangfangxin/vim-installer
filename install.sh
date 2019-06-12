@@ -1,67 +1,157 @@
 #!/bin/bash
 
-echo " MADE BY yiyu0x (https://github.com/yiyu0x)"
-echo " auto-config-vim will start ... "
+# Introduce
+# This installer help people to install and config vim automaticly on Ubuntu and Mac. 
 
-go=0
+# Define variables
+runningFile=`readlink -f $0`
+workDir=`dirname $runningFile`
+vimrc=$HOME/.vimrc
+vimColorDir=$HOME/.vim/colors
+vimPlugDir=$HOME/.vim/autoload
+linkVimplugGithub=https://github.com/junegunn/vim-plug.git
+linkVimSublimeMonokaiGithub=https://github.com/ErichDonGubler/vim-sublime-monokai.git
 
-
-masOS(){
-	go=1
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	brew install git
-}	
-
-linux(){
-	go=1
-	sudo apt-get -y install git vim
+# Define functions
+# Try to install HomeBrew for Mac
+checkAndInstallBrew() {
+    if [ ! -x "`which brew`" ]; then
+        read -p "Package manager HomeBrew not exits, do you want to install it? [y/n] " choice
+        if [ "$choice" == "y" ]; then
+            # There always has ruby on mac.
+            /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        else
+            echo "Install abort due to without HomeBrew, you can install it permaticly later."
+            exit
+        fi
+    fi
 }
 
+# Try to install git automaticly
+installGit() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then   # [[]] is more powerfull test command which support pattern.
+        checkAndInstallBrew
+        brew install git
+    elif [ -x "`which apt`" ]; then
+        sudo apt install git
+    else
+        echo "Automaticly install git failed, you can install it permaticly later."
+        exit
+    fi
+}
 
+# Try to install vim automaticly
+installVim() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        checkAndInstallBrew
+        brew install vim
+    elif [ -x "`which apt`" ]; then
+        sudo apt install vim
+    else
+        echo "Install vim through package manager failed, you can install if permaticly later."
+        exit
+    fi
+}
 
-case "$OSTYPE" in
-    darwin*)  macOS ;;
-    linux*)   linux ;;
-    *)        echo "unknown: OS: $OSTYPE, not support yet ,please contact me " ;;
-esac
+# Try to install vim color vim-sublime-monokai
+installVimColor() {
+    if [ -d $workDir/vim-sublime-monokai ]; then
+        rm -r $workDir/vim-sublime-monokai
+    fi
 
+    git clone $linkVimSublimeMonokaiGithub $workDir/vim-sublime-monokai
 
+    if [ ! -w $vimColorDir ]; then
+        mkdir -p $vimColorDir
+    fi
 
-if [ $go -eq 0 ]
-then
-    exit
+    cp $workDir/vim-sublime-monokai/colors/sublimemonokai.vim $vimColorDir/
+}
+
+# Try to install vim-plug
+installVimplug() {
+    if [ -d $workDir/vim-plug ]; then
+        rm -r $workDir/vim-plug
+    fi
+    
+    git clone $linkVimplugGithub $workDir/vim-plug  
+
+    if ! [ -w $vimPlugDir ]; then
+        mkdir -p $vimPlugDir
+    fi
+
+    cp $workDir/vim-plug/plug.vim $vimPlugDir/
+}
+
+# Main program
+echo "Welcome to vim installer!"
+echo "Checking install environment..."
+
+# Check git
+if [ ! -x "`which git`" ]; then
+    read -p "Git is not exist, try to install it? [y/n] " choice
+    if [ "$choice" == "y" ]; then
+        installGit
+    else
+        echo "Install abort due to without git."
+        exit
+    fi
 fi
 
-git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+# Check vim
+if [ ! -x "`which vim`" ]
+then
+    read -p "Vim is not exist, try to install it? [y/n] " choice
+    if [ "$choice" == "y" ]; then
+        installVim
+    else
+        echo 'Install abort.'
+        exit
+    fi
+fi
 
-echo "
-set nocompatible              \" be iMproved, required
-filetype off                  \" required
+# Merge vim config to one vimrc file
+cat $workDir/config/basic.vim > $workDir/vimrc
+cat $workDir/config/theme.vim >> $workDir/vimrc
+cat $workDir/config/search.vim >> $workDir/vimrc
+cat $workDir/config/file.vim >> $workDir/vimrc
+cat $workDir/config/netrw.vim >> $workDir/vimrc
+cat $workDir/config/fn.vim >> $workDir/vimrc
+cat $workDir/config/edit.vim >> $workDir/vimrc
+cat $workDir/config/plugs.vim >> $workDir/vimrc
+case "$OSTYPE" in
+    "darwin"*) cat $workDir/config/macos.vim >> $workDir/vimrc ;; # macOS
+    "linux"*)  cat $workDir/config/linux.vim >> $workDir/vimrc ;; # linux
+esac
 
-\" set the runtime path to include Vundle and initialize
-set rtp+=$HOME/.vim/bundle/Vundle.vim
-call vundle#begin()
+# Check vimrc
+if [ -w $vimrc ]; then
+    if cmp $workDir/vimrc $vimrc; then
+        # Same
+        echo 'vimrc already up to date.'
+    else
+        # Use newer vimrc and backup old one.
+        mv $vimrc `dirname $vimrc`/vimrc~`date +%Y%m%d%H%M%S`
+        cp $workDir/vimrc $vimrc
+    fi
+else
+    # $HOME/.vimrc not exist.
+    cp $workDir/vimrc $vimrc
+fi
 
-Plugin 'vim-airline/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
-Plugin 'gmarik/Vundle.vim'
+# Check vim colors
+if [[ -d $vimColorDir && -n "`ls $vimColorDir`" ]]; then
+    # Has other colers
+    tar -czf `dirname $vimColorDir`/colors~`date +%Y%m%d%H%M%S`.tar.gz $vimColorDir
+    rm -r $vimColorDir/*
+fi
+installVimColor
 
-call vundle#end()            \" required
-filetype plugin indent on    \" required
+# Check vim-plug
+if [ ! -f $vimPlugDir/plug.vim ]; then
+    # Install vim-plug
+    installVimplug
+fi
 
-\"airline theme
-let g:airline_theme = 'light'
-let g:airline_powerline_fonts = 1
-set laststatus=2
-set t_Co=256
+vim -c PlugClean -c PlugInstall -c qall
 
-\"airline theme
-let g:airline_theme = 'kolor'
-let g:airline_right_alt_sep = ''
-let g:airline_right_sep = ''
-let g:airline_left_alt_sep= ''
-let g:airline_left_sep = ''
-" >> ~/.vimrc
-
-
-vim -c "PluginInstall" -c "q" -c "q"
