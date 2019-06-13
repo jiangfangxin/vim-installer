@@ -41,3 +41,4 @@ nnoremap sp :sp<CR>
 "endfunction
 "
 "set guitablabel=%{GuiTabLabel()}
+"

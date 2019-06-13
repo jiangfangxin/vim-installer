@@ -11,4 +11,3 @@
 let g:netrw_liststyle = 3   " 目录窗口展示文件目录结构
 let g:netrw_keepdir = 0     " 让Nettrw的current directory和我们正在浏览的目录一致，否则每次执行mc，mm，md等之前都要先c一下
 
-

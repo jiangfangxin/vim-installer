@@ -84,4 +84,3 @@ function QuoteDelim(char)
     endif
 endf
 
-

@@ -18,4 +18,3 @@ nmap <F10> :update<CR>
 imap <F10> <ESC>:update<CR>a
 vmap <F10> <ESC>:update<CR>gv
 
-

@@ -18,4 +18,3 @@ set mouse=a
 let &t_SI = "\e[6 q"    " \e：表示esc，[6：表示|
 let &t_EI = "\e[2 q"    " \e：表示esc，[2：表示block
 
-

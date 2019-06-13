@@ -7,3 +7,4 @@
 " c：comform的缩写，表示每次替换都要弹出提示
 set incsearch       " 开启实时搜索
 set ignorecase      " 搜索时忽略大小写
+
