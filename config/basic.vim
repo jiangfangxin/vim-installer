@@ -1,3 +1,4 @@
+" ---------- basic.vim ----------
 " 基本设置 
 set number          " 显示行号
 set nocompatible    " 关闭兼容模式

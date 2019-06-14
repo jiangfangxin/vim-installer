@@ -1,3 +1,4 @@
+" ---------- edit.vim ----------
 " 按键映射：快速移动光标
 " Shift + Left：左移一个word        Shift + Right：右移一个word
 " Shift + Up  ：上移一行            Shift + Down ：下移一行

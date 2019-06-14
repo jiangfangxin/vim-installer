@@ -1,1 +1,2 @@
-" Settings for Mac
+" ---------- macos.vim ----------
+"

@@ -1,1 +1,2 @@
-" Settings for linux
+" ---------- linux.vim ---------- 
+"

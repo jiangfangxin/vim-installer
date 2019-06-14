@@ -1,3 +1,4 @@
+" ---------- fn.vim ----------
 " 按键映射
 " F2：切换显示行号number
 nmap <F2> :set invnumber<CR>

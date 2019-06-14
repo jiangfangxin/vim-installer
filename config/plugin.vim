@@ -1,3 +1,4 @@
+" ---------- plugin.vim ----------
 " Vim-plug，去GitHub下载Vim-plug的.vim文件，放置到~/.vim/autoload/下，Vim-plug安装的插件会放到~/.vim/plugged/下
 " 插件状态:PlugStatus
 " 安装插件:PlugInstall

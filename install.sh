@@ -4,7 +4,7 @@
 #       install.sh - Install and config vim automaticly on Ubuntu and Mac.
 # 
 # SYNOPSIS
-#       install.sh [-h|--help] [-u]
+#       install.sh [-c] [-h|--help] [-u]
 # 
 # DESCRIPTION
 #       install.sh is a bash shell which can help people install and config vim automaticly on Ubuntu and Mac.
@@ -15,6 +15,9 @@
 #       The default theme is ErichDonGubler/vim-sublime-monokai. The default plugin manager is junegunn/vim-plug.
 #
 # COMMAND LINE OPTIONS
+#       -c
+#               Clean all backup.
+#
 #       -h, --help
 #               Prints the usage for the interpreter executable and exits.
 #
@@ -103,18 +106,40 @@ installVim() {
 }
 
 cleanOldBackup() {
-    # $1 like: /home/name/vimrc~
-    # or like: /home/name/.vim/colors~
-    # $2 like: .tar.gz
-    if [ `ls $1*$2 2>/dev/null | wc -l` -gt 3 ]; then
+    all=0       # If delete all backup.
+    prefix=""   # Backup file prefix, like: /home/name/vimrc~, or like: /home/name/.vim/colors~
+    suffix=""   # Backup file suffix, like: .tar.gz
+    for i in $@; do
+        if [[ $i == "-"* ]]; then
+            if [ $i == "-a" ]; then
+                all=1
+            else
+                echo "Unkonwn option: $i."
+            fi
+        else
+            if [ -z $prefix ]; then
+                prefix=$i
+            elif [ -z $suffix ]; then
+                suffix=$i
+            else
+                echo "Unkonwn param: $i."
+            fi
+        fi
+    done
+    if [ $all == 1 ]; then
+        for f in $prefix*$suffix; do
+            rm $f
+            echo "Backup file $f be deleted."
+        done
+    elif [ `ls $prefix*$suffix 2>/dev/null | wc -l` -gt 3 ]; then
         # Delete backup more than 30 days.
         lastMonth=`date -d "-30 days" +%Y%m%d%H%M%S`
-        for f in $1*$2; do
+        for f in $prefix*$suffix; do
             # Delete path only leave time to compare.
-            time=${f/$1/}
-            if [ -n $2 ]; then
-                time=${time/$2/}
-            fi
+            time=${${f/$prefix/}/$suffix/}
+            #if [ -n $suffix ]; then
+            #    time=${time/$suffix/}
+            #fi
             if [ $time -lt $lastMonth ]; then
                 rm $f
                 echo "Old backup file $f be deleted."
@@ -229,8 +254,9 @@ installPlugins() {
 
 echoHelp() {
     cat << EOF
-usage: install.sh [-h|--help] [-u]
+usage: install.sh [-c] [-h|--help] [-u]
 options:
+-c         : Clean all backup.
 -h, --help : Show usage an options.
 -u         : Only combine and update vimrc.
 EOF
@@ -255,8 +281,14 @@ main() {
             elif [ $i == "-u" ]; then
                 echo "Start update vimrc."
                 installVimrc
+            elif [ $i == "-c" ]; then
+                echo "Start clean all backup."
+                cleanOldBackup -a $vimrcDir/vimrc~
+                cleanOldBackup -a $vimColorDir~ .tar.gz
+                cleanOldBackup -a $vimPluginManagerDir~ .tar.gz
+                echo "All backup cleaned."
             else
-                echo "No command option $i."
+                echo "Unknown option: $i."
             fi
         done
     fi
