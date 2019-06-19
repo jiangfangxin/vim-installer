@@ -9,6 +9,25 @@
 " mt -> mf -> mm（必须在源目录执行）：标记目标 -> 标记源 -> 移动文件或目录
 " mf -> md（必须在源目录执行）      ：Diff文件更改
 " mF：取消标记
-let g:netrw_liststyle = 3   " 目录窗口展示文件目录结构
-let g:netrw_keepdir = 0     " 让Nettrw的current directory和我们正在浏览的目录一致，否则每次执行mc，mm，md等之前都要先c一下
+let g:netrw_liststyle = 3   " Netrw默认展示文件目录结构
+let g:netrw_keepdir = 0     " 让Netrw的current directory和我们正在浏览的目录一致，否则每次执行mc，mm，md等之前都要先c一下
+
+" mf -> mo：在多个tab中打开使用mf标记的mark files
+autocmd Filetype netrw nnoremap mo :<C-r>=OpenMarkFiles()<CR><CR>
+function OpenMarkFiles()
+    let markList = netrw#Expose("netrwmarkfilelist")
+    let str = ""
+    let i = 0
+    let len = len(markList)
+    while i < len 
+      let f = escape(fnameescape(markList[i]), '.')
+      if str == ""
+          let str = "e " . f
+      else
+          let str = str . " | tabe " . f
+      endif
+      let i = i + 1
+    endwhile
+    return str
+endf
 

@@ -33,7 +33,6 @@
 startDir=$PWD
 cd `dirname $0`
 workDir=$PWD
-cd $startDir
 
 vimrcDir=$HOME
 vimColorDir=$HOME/.vim/colors
@@ -48,6 +47,11 @@ pluginManagerRepostry=https://github.com/junegunn/vim-plug.git
 pluginManagerPath=plug.vim
 
 # Functions
+quit() {
+    cd $startDir
+    exit
+}
+
 installHomeBrew() {
     if [ ! -x "`which brew`" ]; then
         read -p "Package manager HomeBrew not exits, do you want to install it? [y/n] " choice
@@ -57,7 +61,7 @@ installHomeBrew() {
             echo "HomeBrew installed."
         else
             echo "Install abort due to without HomeBrew, you can install it permaticly later."
-            exit
+            quit
         fi
     fi
 }
@@ -74,11 +78,11 @@ installGit() {
                 sudo apt install git
             else
                 echo "Install git through package manager failed, you can install it manually later."
-                exit
+                quit
             fi
         else
             echo "Install abort due to without git."
-            exit
+            quit
         fi
     fi
 }
@@ -96,11 +100,11 @@ installVim() {
                 echo "Vim installed."
             else
                 echo "Install vim through package manager failed, you can install if manually later."
-                exit
+                quit
             fi
         else
             echo 'Install abort due to without vim.'
-            exit
+            quit
         fi
     fi
 }
@@ -126,20 +130,25 @@ cleanOldBackup() {
             fi
         fi
     done
+
     if [ $all == 1 ]; then
         for f in $prefix*$suffix; do
             rm $f
             echo "Backup file $f be deleted."
         done
-    elif [ `ls $prefix*$suffix 2>/dev/null | wc -l` -gt 3 ]; then
+    elif [ `ls $prefix*$suffix 2>/dev/null | wc -l` -gt 3 ]; then   # Only delete backup when count more than 3.
         # Delete backup more than 30 days.
-        lastMonth=`date -d "-30 days" +%Y%m%d%H%M%S`
+        # The date syntax has some diffrent between Ubuntu and Mac.
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            lastMonth=`date -v -30d +%Y%m%d%H%M%S`
+        else
+            lastMonth=`date -d "-30 days" +%Y%m%d%H%M%S`
+        fi
+
         for f in $prefix*$suffix; do
             # Delete path only leave time to compare.
-            time=${${f/$prefix/}/$suffix/}
-            #if [ -n $suffix ]; then
-            #    time=${time/$suffix/}
-            #fi
+            time=${f/$prefix/}
+            time=${time/$suffix/}
             if [ $time -lt $lastMonth ]; then
                 rm $f
                 echo "Old backup file $f be deleted."
@@ -150,44 +159,46 @@ cleanOldBackup() {
 
 installVimrc() {
     # Merge vim config to one vimrc file
-    cat $workDir/config/basic.vim > $workDir/vimrc
-    echo "config/basic.vim > vimrc"
-    cat $workDir/config/theme.vim >> $workDir/vimrc
-    echo "config/theme.vim >> vimrc"
-    cat $workDir/config/search.vim >> $workDir/vimrc
-    echo "config/search.vim >> vimrc"
-    cat $workDir/config/file.vim >> $workDir/vimrc
-    echo "config/file.vim >> vimrc"
-    cat $workDir/config/netrw.vim >> $workDir/vimrc
-    echo "config/netrw.vim >> vimrc"
-    cat $workDir/config/fn.vim >> $workDir/vimrc
-    echo "config/fn.vim >> vimrc"
-    cat $workDir/config/edit.vim >> $workDir/vimrc
-    echo "config/edit.vim >> vimrc"
-    cat $workDir/config/plugin.vim >> $workDir/vimrc
-    echo "config/plugin.vim >> vimrc"
+    cat config/basic.vim > vimrc
+        echo "config/basic.vim > vimrc"
+    cat config/theme.vim >> vimrc
+        echo "config/theme.vim >> vimrc"
+    cat config/search.vim >> vimrc
+        echo "config/search.vim >> vimrc"
+    cat config/file.vim >> vimrc
+        echo "config/file.vim >> vimrc"
+    cat config/netrw.vim >> vimrc
+        echo "config/netrw.vim >> vimrc"
+    cat config/fn.vim >> vimrc
+        echo "config/fn.vim >> vimrc"
+    cat config/edit.vim >> vimrc
+        echo "config/edit.vim >> vimrc"
+    cat config/plugin.vim >> vimrc
+        echo "config/plugin.vim >> vimrc"
+    cat config/mac-keyboard.vim >> vimrc
+        echo "config/mac-keyboard.vim >> vimrc"
     case "$OSTYPE" in
-        "darwin"*) cat $workDir/config/macos.vim >> $workDir/vimrc
-                   echo "config/macos.vim >> vimrc" ;; # macOS
-        "linux"*)  cat $workDir/config/linux.vim >> $workDir/vimrc
-                   echo "config/linux.vim >> vimrc" ;; # linux
+        "darwin"*) cat config/macos.vim >> vimrc
+                       echo "config/macos.vim >> vimrc" ;; # macOS
+        "linux"*)  cat config/linux.vim >> vimrc
+                       echo "config/linux.vim >> vimrc" ;; # linux
     esac
 
     # Check vimrc
     if [ -f $vimrcDir/.vimrc ]; then
-        if cmp $workDir/vimrc $vimrcDir/.vimrc; then
+        if cmp vimrc $vimrcDir/.vimrc; then
             # Same
             echo "vimrc has no change, no need to update."
         else
             # Use newer vimrc and backup old one.
             mv $vimrcDir/.vimrc $vimrcDir/vimrc~`date +%Y%m%d%H%M%S`
             echo "Old vimrc backuped."
-            cp $workDir/vimrc $vimrcDir/.vimrc
+            cp vimrc $vimrcDir/.vimrc
             echo "vimrc updated."
         fi
     else
         # $HOME/.vimrc not exist.
-        cp $workDir/vimrc $vimrcDir/.vimrc
+        cp vimrc $vimrcDir/.vimrc
         echo "vimrc updated."
     fi
 
@@ -202,7 +213,7 @@ installTheme() {
             # Has other colers
             cd `dirname $vimColorDir`
             tar -czf $vimColorDir~`date +%Y%m%d%H%M%S`.tar.gz `basename $vimColorDir`
-            cd $startDir
+            cd $workDir
             echo "Old theme backuped."
             rm -r $vimColorDir/*
         fi
@@ -210,12 +221,12 @@ installTheme() {
         mkdir -p $vimColorDir
     fi
 
-    if [ -d $workDir/theme ]; then
-        rm -rf $workDir/theme
+    if [ -d theme ]; then
+        rm -rf theme
     fi
 
-    git clone $themeRepostry $workDir/theme
-    cp $workDir/theme/$themeFilePath $vimColorDir/
+    git clone $themeRepostry theme
+    cp theme/$themeFilePath $vimColorDir/
     echo "Theme updated."
     
     cleanOldBackup $vimColorDir~ .tar.gz
@@ -227,7 +238,7 @@ installPluginManager() {
             # Backup old plugin manager
             cd `dirname $vimPluginManagerDir`
             tar -czf $vimPluginManagerDir~`date +%Y%m%d%H%M%S`.tar.gz `basename $vimPluginManagerDir`
-            cd $startDir
+            cd $workDir
             echo "Old plugin manager backuped."
             rm -r $vimPluginManagerDir/*
         fi
@@ -235,12 +246,12 @@ installPluginManager() {
         mkdir -p $vimPluginManagerDir
     fi
 
-    if [ -d $workDir/pluginManager ]; then
-        rm -rf $workDir/pluginManager
+    if [ -d pluginManager ]; then
+        rm -rf pluginManager
     fi
 
-    git clone $pluginManagerRepostry $workDir/pluginManager
-    cp $workDir/pluginManager/$pluginManagerPath $vimPluginManagerDir/
+    git clone $pluginManagerRepostry pluginManager
+    cp pluginManager/$pluginManagerPath $vimPluginManagerDir/
     echo "Plugin manager updated."
 
     cleanOldBackup $vimPluginManagerDir~ .tar.gz
@@ -292,6 +303,7 @@ main() {
             fi
         done
     fi
+    quit
 }
 
 # Run

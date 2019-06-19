@@ -1,34 +1,47 @@
 " ---------- edit.vim ----------
-" 按键映射：快速移动光标
-" Shift + Left：左移一个word        Shift + Right：右移一个word
-" Shift + Up  ：上移一行            Shift + Down ：下移一行
-nmap <S-Up> <Up>
-imap <S-Up> <Up>
-vmap <S-Up> <Up>
-nmap <S-Down> <Down>
-imap <S-Down> <Down>
-vmap <S-Down> <Down>
-" Shift + Right 用e来前进一个单词
-nmap <S-Right> e
-imap <S-Right> <C-o>e
-vmap <S-Right> e
+" 全选快捷键，在normal和visual模式下按Ctrl + a即可
+nnoremap <C-a> ggvG$
+vnoremap <C-a> <ESC>ggvG$
 
-" insert模式下：光标行前行尾定位
-imap <C-a> <Home>
-imap <C-e> <End>
+" 快速移动光标
+" 这两个是Vim自带的：
+" Shift + Left：左移一个word        Shift + Right：右移一个word
+" Vim自带Shift + Up/Down为翻页，为了避免按错我改为了上下移动一行：
+" Shift + Up  ：上移一行            Shift + Down ：下移一行
+nnoremap <S-Up> <Up>
+inoremap <S-Up> <Up>
+vnoremap <S-Up> <Up>
+nnoremap <S-Down> <Down>
+inoremap <S-Down> <Down>
+vnoremap <S-Down> <Down>
+" Shift + Right 用e来前进一个单词
+" Vim默认Shift + Right是w，但是e会好用些
+nnoremap <S-Right> e
+inoremap <S-Right> <C-o>e
+vnoremap <S-Right> e
+
+" insert模式下：光标行首行尾定位
+inoremap <C-a> <Home>
+inoremap <C-e> <End>
 
 " Ctrl + d: 向右删除一个word
-imap <C-d> <C-o>dw
+inoremap <C-d> <C-o>dw
 
 " Ctrl + k：删除到行尾
-imap <C-k> <C-r>=DeleteToEnd()<CR>
+inoremap <C-k> <C-r>=DeleteToEnd()<CR>
 function DeleteToEnd()
-    if strlen(getline('.')) == 0
-        return "\<esc>\<s-j>i"
-    elseif strlen(getline('.')) == (col('.') - 1)
-        return "\<esc>\<s-j>xi"
-    else
+    let line = getline('.')
+    let len = strlen(line)
+    if len == 0     " 本行没有字符
+        return "\<ESC>Ji"
+    elseif (col('.') - 1) < len     " 光标没有再最末尾
         return "\<C-o>d$"
+    elseif match(line, '\s$') == -1     " 本行最后一个不是空白字符
+        return "\<ESC>Ja\<BS>"
+    elseif match(getline(line('.') + 1), '^\s*$') != -1     " 下一行如果全是空白字符
+        return "\<ESC>Ja"
+    else
+        return "\<ESC>Ji"
     endif
 endf
 
