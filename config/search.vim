@@ -8,7 +8,6 @@
 " c：comform的缩写，表示每次替换都要弹出提示
 set hlsearch        " 开启搜索高亮
 set incsearch       " 开启实时搜索
-set ignorecase      " 搜索时忽略大小写
 
 " 对选中的字符，按f快速搜索，搜索后自动高亮
 " 参考：[Vim registers: The basics and beyond](https://www.brianstorti.com/vim-registers/)
