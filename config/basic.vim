@@ -12,6 +12,7 @@ augroup numbertoggle
 augroup END
 
 set nocompatible    " 关闭兼容模式
+set encoding=utf-8  " 设置文件的编码为utf-8
 
 " 语法高亮
 syntax on

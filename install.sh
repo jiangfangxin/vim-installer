@@ -12,7 +12,7 @@
 #       it will try to install git by apt (for Ubuntu) or brew (for Mac). If brew not found on Mac, this installer
 #       will try to install it after get your permission.
 #
-#       The default theme is ErichDonGubler/vim-sublime-monokai. The default plugin manager is junegunn/vim-plug.
+#       The default theme is tomasr/molokai. The default plugin manager is junegunn/vim-plug.
 #
 # COMMAND LINE OPTIONS
 #       -c
@@ -31,29 +31,40 @@
 
 # Variables
 startDir=$PWD
+quit() {
+    cd $startDir
+    exit
+}
+
 cd `dirname $0`
 workDir=$PWD
 
 vimrcDir=$HOME
 vimColorDir=$HOME/.vim/colors
 vimPluginManagerDir=$HOME/.vim/autoload
+vimPluginsDir=$HOME/.vim/plugged
 
 # Theme
-themeRepostry=https://github.com/ErichDonGubler/vim-sublime-monokai.git
-themeFilePath=colors/sublimemonokai.vim
+themeRepostry=https://github.com/tomasr/molokai.git
+themeFilePath=colors/molokai.vim
 
 # Plugin Manager
 pluginManagerRepostry=https://github.com/junegunn/vim-plug.git
 pluginManagerPath=plug.vim
 
-# Functions
-quit() {
-    cd $startDir
-    exit
-}
+# System package tool
+if [[ "$OSTYPE" == "darwin"* ]]; then  # Mac
+    pkg=brew
+elif [[ "$OSTYPE" == "linux"* && -x "`which apt`" ]]; then   # Ubuntu
+    pkg=sudo apt
+else    # Others
+    echo "System not support now."
+    quit
+fi
 
-installHomeBrew() {
-    if [ ! -x "`which brew`" ]; then
+# Functions
+installHomeBrewIfMac() {
+    if [[ "$OSTYPE" == "darwin"* && ! -x "`which brew`" ]]; then   # [[]] is more powerfull test command which support pattern.
         read -p "Package manager HomeBrew not exits, do you want to install it? [y/n] " choice
         if [ "$choice" == "y" ]; then
             # There always has ruby on mac.
@@ -70,16 +81,8 @@ installGit() {
     if [ ! -x "`which git`" ]; then
         read -p "Git is not exist, try to install it? [y/n] " choice
         if [ "$choice" == "y" ]; then
-            if [[ "$OSTYPE" == "darwin"* ]]; then   # [[]] is more powerfull test command which support pattern.
-                installHomeBrew
-                brew install git
-                echo "Git installed."
-            elif [ -x "`which apt`" ]; then
-                sudo apt install git
-            else
-                echo "Install git through package manager failed, you can install it manually later."
-                quit
-            fi
+            $pkg install git
+            echo "Git installed."
         else
             echo "Install abort due to without git."
             quit
@@ -88,23 +91,29 @@ installGit() {
 }
 
 installVim() {
-    if [ ! -x "`which vim`" ]; then
-        read -p "Vim is not exist, try to install it? [y/n] " choice
-        if [ "$choice" == "y" ]; then
-            if [[ "$OSTYPE" == "darwin"* ]]; then
-                installHomeBrew
-                brew install vim
-                echo "Vim installed."
-            elif [ -x "`which apt`" ]; then
-                sudo apt install vim
-                echo "Vim installed."
+    if [[ "$OSTYPE" == "darwin"* ]]; then   # macOS
+        if [[ ! -x "`which vim`" || "`which vim`" == "/usr/bin/vim" ]]; then
+            # There is no vim or the vim comes with macOS.
+            read -p "Try to install vim through HomeBrew? [y/n] " choice
+            if [ "$choice" == "y" ]; then
+                # The vim HomeBrew installed will be put at /usr/local/bin/vim
+                $pkg install vim
+                echo "Vim installed, restart shell before you can use it."
             else
-                echo "Install vim through package manager failed, you can install if manually later."
+                echo 'Install abort due to rejecting HomeBrew vim installation.'
                 quit
             fi
-        else
-            echo 'Install abort due to without vim.'
-            quit
+        fi
+    else    # Ubuntu
+        if [ ! -x "`which vim`" ]; then
+            read -p "Vim is not exist, try to install it? [y/n] " choice
+            if [ "$choice" == "y" ]; then
+                $pkg apt install vim
+                echo "Vim installed."
+            else
+                echo 'Install abort due to without vim.'
+                quit
+            fi
         fi
     fi
 }
@@ -257,16 +266,27 @@ installPluginManager() {
     cleanOldBackup $vimPluginManagerDir~ .tar.gz
 }
 
+installPluginNeedTools() {
+    echo "Start install plugin need tools."
+    # Plugin [rking/ag.vim](https://github.com/rking/ag.vim) needed.
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        $pkg install the_silver_searcher
+    else
+        $pkg install silversearcher-ag
+    fi
+    echo "Tools installed.";
+}
+
 installPlugins() {
     echo "Start install plugins..."
-    vim -c PlugClean -c PlugInstall -c qall
+    vim -c PlugClean! -c PlugInstall -c qall
     echo "Plugin installed."
 }
 
 echoHelp() {
     cat << EOF
-usage: install.sh [-c] [-h|--help] [-u]
-options:
+Usage: install.sh [-c] [-h|--help] [-u]
+Options:
 -c         : Clean all backup.
 -h, --help : Show usage an options.
 -u         : Only combine and update vimrc.
@@ -278,11 +298,13 @@ main() {
     if [ $# == 0 ]; then
         echo "Start vim-installer."
         echo "Checking install environment..."
+        installHomeBrewIfMac
         installGit
         installVim
         installVimrc
         installTheme
         installPluginManager
+        installPluginNeedTools
         installPlugins
         echo "Vim installed, all configured."
     else

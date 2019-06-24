@@ -1,4 +1,7 @@
 " ---------- edit.vim ----------
+" 允许删除键删除vim的indent，行首和行末字符
+set backspace=indent,eol,start
+
 " 全选快捷键，在normal和visual模式下按Ctrl + a即可
 nnoremap <C-a> ggvG$
 vnoremap <C-a> <ESC>ggvG$
@@ -44,16 +47,6 @@ function DeleteToEnd()
         return "\<ESC>Ji"
     endif
 endf
-
-" 按键映射：剪切复制粘贴都操作register 0，避免被d删除弄脏
-nnoremap cc "0cc<ESC>
-vnoremap c "0c<ESC>
-nnoremap C "0C<ESC>
-vnoremap C "0C<ESC>
-nnoremap p "0p
-vnoremap p "0p
-nnoremap P "0P
-vnoremap P "0P
 
 " 按键映射：英文符号()[]{}<>等自动补全
 inoremap ( ()<ESC>i

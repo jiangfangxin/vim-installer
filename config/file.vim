@@ -9,10 +9,8 @@ nnoremap gf :vertical wincmd f<CR>
 " 在新tab页打开当前文件：Ctrl + w T
 " 根据部分文件名模糊搜索当前目录下的文件，如:vs */*<partial file name><Tab>
 nnoremap E :e */*
-nnoremap t :tabe<CR>
-nnoremap T :tabe */*
-nnoremap vs :vs<CR>
-nnoremap VS :vs */*
-nnoremap sp :sp<CR>
-nnoremap SP :sp */*
+nnoremap T :tabe<CR>
+nnoremap t :tabe */*
+nnoremap vs :vs */*
+nnoremap sp :sp */*
 
