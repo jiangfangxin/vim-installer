@@ -7,8 +7,8 @@ set number relativenumber   " 显示行号，相对光标的行号
 " normal模式显示相对行号，insert模式显示绝对行号
 augroup numbertoggle
   autocmd!
-  autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
-  autocmd BufLeave,FocusLost,InsertEnter   * set norelativenumber
+  autocmd BufEnter,FocusGained,InsertLeave * set number | set relativenumber
+  autocmd BufLeave,FocusLost,InsertEnter   * set number | set norelativenumber
 augroup END
 
 set nocompatible    " 关闭兼容模式

@@ -9,16 +9,16 @@
 set hlsearch        " 开启搜索高亮
 set incsearch       " 开启实时搜索
 
-" 对选中的字符，按f快速搜索，搜索后自动高亮
+" 对选中的字符，按n快速搜索，搜索后自动高亮
 " 参考：[Vim registers: The basics and beyond](https://www.brianstorti.com/vim-registers/)
 " 这里使用了一个自定义的register：a
-vnoremap f "ay/<C-r>a<CR>:set hlsearch<CR>
+vnoremap n "ay/<C-r>a<CR>:set hlsearch<CR>
 
-" 在normal和virtual模式按F切换显示搜索高亮
+" 在normal和virtual模式按S切换显示搜索高亮
 " 避免有的时候高亮打扰代码的编写
 " 参考：[Highlight all search pattern matches](https://vim.fandom.com/wiki/Highlight_all_search_pattern_matches)
-nnoremap F :set hlsearch!<CR>
-vnoremap F <ESC>:set hlsearch!<CR>gv
+nnoremap S :set hlsearch!<CR>
+vnoremap S <ESC>:set hlsearch!<CR>gv
 
 " 每次在命令行搜索栏回车时，都再次开启搜索高亮
 " 避免手动关闭高亮后，搜索不明显

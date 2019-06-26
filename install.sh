@@ -12,7 +12,7 @@
 #       it will try to install git by apt (for Ubuntu) or brew (for Mac). If brew not found on Mac, this installer
 #       will try to install it after get your permission.
 #
-#       The default theme is tomasr/molokai. The default plugin manager is junegunn/vim-plug.
+#       The default theme is ErichDonGubler/vim-sublime-monokai. The default plugin manager is junegunn/vim-plug.
 #
 # COMMAND LINE OPTIONS
 #       -c
@@ -45,8 +45,8 @@ vimPluginManagerDir=$HOME/.vim/autoload
 vimPluginsDir=$HOME/.vim/plugged
 
 # Theme
-themeRepostry=https://github.com/tomasr/molokai.git
-themeFilePath=colors/molokai.vim
+themeRepostry=https://github.com/ErichDonGubler/vim-sublime-monokai.git
+themeFilePath=colors/sublimemonokai.vim
 
 # Plugin Manager
 pluginManagerRepostry=https://github.com/junegunn/vim-plug.git

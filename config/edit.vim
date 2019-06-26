@@ -91,3 +91,7 @@ function QuoteDelim(char)
     endif
 endf
 
+" 选择给定行数，因为默认的V选择有问题。
+" 前面的j是为了抵消掉用户按下的数字，然后再用k回到原处，需要比较是否走到文件末尾，如果是就差值返回。
+nnoremap <expr> V 'j'. (v:count < line('$')-line('.') ? v:count : line('$')-line('.')) .'kV'. (v:count-1) .'j'
+
