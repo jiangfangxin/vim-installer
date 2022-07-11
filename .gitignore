@@ -5,3 +5,6 @@
 vimrc
 theme/
 pluginManager/
+
+# Tags file
+tags

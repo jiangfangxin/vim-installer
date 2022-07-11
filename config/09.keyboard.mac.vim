@@ -1,4 +1,4 @@
-" ---------- mac-keyboard.vim ----------
+" ---------- keyboard.mac.vim ----------
 " 针对Mac电脑键盘的绑定
 " Mac键盘下，Alt + <letter>会输出一个拉丁符号
 " 利用这个特点来绑定tab的切换和移动快捷键

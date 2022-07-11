@@ -33,10 +33,10 @@
 startDir=$PWD
 quit() {
     cd $startDir
-    exit
+    exit $1     # Exit with a number code.
 }
 
-cd `dirname $0`
+cd $(dirname $0)
 workDir=$PWD
 
 vimrcDir=$HOME
@@ -52,70 +52,100 @@ themeFilePath=colors/sublimemonokai.vim
 pluginManagerRepostry=https://github.com/junegunn/vim-plug.git
 pluginManagerPath=plug.vim
 
-# System package tool
-if [[ "$OSTYPE" == "darwin"* ]]; then  # Mac
-    pkg=brew
-elif [[ "$OSTYPE" == "linux"* && -x "`which apt`" ]]; then   # Ubuntu
-    pkg=sudo apt
-else    # Others
+# System check
+if [[ "$OSTYPE" == "darwin"* ]]; then # Mac
+    OS=Mac
+    echo "Mac supported."
+elif [[ "$OSTYPE" == "linux"* && -x "$(which apt)" ]]; then # Ubuntu
+    OS=Ubuntu
+    echo "Ubuntu supported."
+else # Others
+    OS=Other
     echo "System not support now."
-    quit
+    quit 1
 fi
 
 # Functions
 installHomeBrewIfMac() {
-    if [[ "$OSTYPE" == "darwin"* && ! -x "`which brew`" ]]; then   # [[]] is more powerfull test command which support pattern.
+    if [[ "$OS" == "Mac"* && ! -x "$(which brew)" ]]; then   # [[]] is more powerfull test command which support pattern.
         read -p "Package manager HomeBrew not exits, do you want to install it? [y/n] " choice
         if [ "$choice" == "y" ]; then
             # There always has ruby on mac.
-            /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-            echo "HomeBrew installed."
+            if /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"; then
+                echo "HomeBrew installed."
+            else
+                echo "Install HomeBrew failed."
+                quit 1
+            fi
         else
             echo "Install abort due to without HomeBrew, you can install it permaticly later."
-            quit
+            quit 1
         fi
     fi
 }
 
 installGit() {
-    if [ ! -x "`which git`" ]; then
+    if [ ! -x "$(which git)" ]; then
         read -p "Git is not exist, try to install it? [y/n] " choice
         if [ "$choice" == "y" ]; then
-            $pkg install git
-            echo "Git installed."
+            case "$OS" in
+                "Mac"*) # Mac
+                    if brew install git; then
+                        echo "Git installed."
+                    else
+                        echo "Install Git failed."
+                        quit 1
+                    fi;;
+                "Ubuntu"*) # Ubuntu
+                    if sudo apt install git; then
+                        echo "Git installed."
+                    else
+                        echo "Install Git failed."
+                        quit 1
+                    fi;;
+            esac
         else
             echo "Install abort due to without git."
-            quit
+            quit 1
         fi
     fi
 }
 
 installVim() {
-    if [[ "$OSTYPE" == "darwin"* ]]; then   # macOS
-        if [[ ! -x "`which vim`" || "`which vim`" == "/usr/bin/vim" ]]; then
-            # There is no vim or the vim comes with macOS.
-            read -p "Try to install vim through HomeBrew? [y/n] " choice
-            if [ "$choice" == "y" ]; then
-                # The vim HomeBrew installed will be put at /usr/local/bin/vim
-                $pkg install vim
-                echo "Vim installed, restart shell before you can use it."
-            else
-                echo 'Install abort due to rejecting HomeBrew vim installation.'
-                quit
-            fi
-        fi
-    else    # Ubuntu
-        if [ ! -x "`which vim`" ]; then
-            read -p "Vim is not exist, try to install it? [y/n] " choice
-            if [ "$choice" == "y" ]; then
-                $pkg apt install vim
-                echo "Vim installed."
-            else
-                echo 'Install abort due to without vim.'
-                quit
-            fi
-        fi
-    fi
+    case "$OS" in
+        "Mac"*) # Mac
+            if [[ ! -x "$(which vim)" || "$(which vim)" == "/usr/bin/vim" ]]; then
+                # There is no vim or the vim comes with mac.
+                read -p "Try to install vim through HomeBrew? [y/n] " choice
+                if [ "$choice" == "y" ]; then
+                    # The vim HomeBrew installed will be put at /usr/local/bin/vim
+                    if brew install vim; then
+                        echo "Vim installed, restart shell before you can use it."
+                    else
+                        echo "Install vim failed."
+                        quit 1
+                    fi
+                else
+                    echo 'Install abort due to rejecting HomeBrew vim installation.'
+                    quit 1
+                fi
+            fi;;
+        "Ubuntu"*) # Ubuntu
+            if [ ! -x "$(which vim)" ]; then
+                read -p "Vim is not exist, try to install it? [y/n] " choice
+                if [ "$choice" == "y" ]; then
+                    if sudo apt install vim; then
+                        echo "Vim installed."
+                    else
+                        echo "Install vim failed."
+                        quit 1
+                    fi
+                else
+                    echo 'Install abort due to without vim.'
+                    quit 1
+                fi
+            fi;;
+    esac
 }
 
 cleanOldBackup() {
@@ -145,15 +175,13 @@ cleanOldBackup() {
             rm $f
             echo "Backup file $f be deleted."
         done
-    elif [ `ls $prefix*$suffix 2>/dev/null | wc -l` -gt 3 ]; then   # Only delete backup when count more than 3.
+    elif [ $(ls $prefix*$suffix 2>/dev/null | wc -l) -gt 3 ]; then   # Only delete backup when count more than 3.
         # Delete backup more than 30 days.
         # The date syntax has some diffrent between Ubuntu and Mac.
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            lastMonth=`date -v -30d +%Y%m%d%H%M%S`
-        else
-            lastMonth=`date -d "-30 days" +%Y%m%d%H%M%S`
-        fi
-
+        case "$OS" in
+            "Mac"*) lastMonth=$(date -v -30d +%Y%m%d%H%M%S) ;;       # Mac
+            "Ubuntu"*)  lastMonth=$(date -d "-30 days" +%Y%m%d%H%M%S) ;; # Ubuntu
+        esac
         for f in $prefix*$suffix; do
             # Delete path only leave time to compare.
             time=${f/$prefix/}
@@ -167,31 +195,36 @@ cleanOldBackup() {
 }
 
 installVimrc() {
+    # 读取config目录下的配置文件
+    files=() # 定义一个空数组
+    for file in $(ls $workDir/config); do
+        if [[ "$file" == "--."* ]]; then
+            echo "Ignored disabled config: $file"
+        elif [[ "$file" == *".mac.vim" && "$OS" != "Mac" ]]; then
+            echo "Ignored unpaired config: $file"
+        elif [[ "$file" == *".ubuntu.vim" && "$OS" != "Ubuntu" ]]; then
+            echo "Ignored unpaired config: $file"
+        else
+            # 插入排序：递增
+            len=${#files[@]}
+            for (( i=0; $i < $len; i++)); do
+                if [[ $file < ${files[$i]} ]]; then
+                    break
+                fi
+            done
+            for (( j=$len; $j > $i; j--)); do
+                files[$j]=${files[$j-1]}
+            done
+            files[$i]=$file
+        fi
+    done
+
     # Merge vim config to one vimrc file
-    cat config/basic.vim > vimrc
-        echo "config/basic.vim > vimrc"
-    cat config/theme.vim >> vimrc
-        echo "config/theme.vim >> vimrc"
-    cat config/search.vim >> vimrc
-        echo "config/search.vim >> vimrc"
-    cat config/file.vim >> vimrc
-        echo "config/file.vim >> vimrc"
-    cat config/netrw.vim >> vimrc
-        echo "config/netrw.vim >> vimrc"
-    cat config/fn.vim >> vimrc
-        echo "config/fn.vim >> vimrc"
-    cat config/edit.vim >> vimrc
-        echo "config/edit.vim >> vimrc"
-    cat config/plugin.vim >> vimrc
-        echo "config/plugin.vim >> vimrc"
-    cat config/mac-keyboard.vim >> vimrc
-        echo "config/mac-keyboard.vim >> vimrc"
-    case "$OSTYPE" in
-        "darwin"*) cat config/macos.vim >> vimrc
-                       echo "config/macos.vim >> vimrc" ;; # macOS
-        "linux"*)  cat config/linux.vim >> vimrc
-                       echo "config/linux.vim >> vimrc" ;; # linux
-    esac
+    cat /dev/null > vimrc
+    for file in ${files[@]}; do
+        cat config/$file >> vimrc
+        echo "config/$file >> vimrc"
+    done
 
     # Check vimrc
     if [ -f $vimrcDir/.vimrc ]; then
@@ -200,7 +233,7 @@ installVimrc() {
             echo "vimrc has no change, no need to update."
         else
             # Use newer vimrc and backup old one.
-            mv $vimrcDir/.vimrc $vimrcDir/vimrc~`date +%Y%m%d%H%M%S`
+            mv $vimrcDir/.vimrc $vimrcDir/vimrc~$(date +%Y%m%d%H%M%S)
             echo "Old vimrc backuped."
             cp vimrc $vimrcDir/.vimrc
             echo "vimrc updated."
@@ -218,10 +251,10 @@ installVimrc() {
 installTheme() {
     # Check vim colors
     if [ -d $vimColorDir ]; then
-        if [ -n "`ls $vimColorDir`" ]; then
+        if [ -n "$(ls $vimColorDir)" ]; then
             # Has other colers
-            cd `dirname $vimColorDir`
-            tar -czf $vimColorDir~`date +%Y%m%d%H%M%S`.tar.gz `basename $vimColorDir`
+            cd $(dirname $vimColorDir)
+            tar -czf $vimColorDir~$(date +%Y%m%d%H%M%S).tar.gz $(basename $vimColorDir)
             cd $workDir
             echo "Old theme backuped."
             rm -r $vimColorDir/*
@@ -243,10 +276,10 @@ installTheme() {
 
 installPluginManager() {
     if [ -d $vimPluginManagerDir ]; then
-        if [ -n "`ls $vimPluginManagerDir`" ]; then
+        if [ -n "$(ls $vimPluginManagerDir)" ]; then
             # Backup old plugin manager
-            cd `dirname $vimPluginManagerDir`
-            tar -czf $vimPluginManagerDir~`date +%Y%m%d%H%M%S`.tar.gz `basename $vimPluginManagerDir`
+            cd $(dirname $vimPluginManagerDir)
+            tar -czf $vimPluginManagerDir~$(date +%Y%m%d%H%M%S).tar.gz $(basename $vimPluginManagerDir)
             cd $workDir
             echo "Old plugin manager backuped."
             rm -r $vimPluginManagerDir/*
@@ -267,14 +300,8 @@ installPluginManager() {
 }
 
 installPluginNeedTools() {
-    echo "Start install plugin need tools."
-    # Plugin [rking/ag.vim](https://github.com/rking/ag.vim) needed.
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        $pkg install the_silver_searcher
-    else
-        $pkg install silversearcher-ag
-    fi
-    echo "Tools installed.";
+    # This will installed in config/plugin-dependent.vim
+    echo "Tools install later.";
 }
 
 installPlugins() {
@@ -325,7 +352,7 @@ main() {
             fi
         done
     fi
-    quit
+    quit 0
 }
 
 # Run
